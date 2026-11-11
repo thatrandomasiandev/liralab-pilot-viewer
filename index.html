@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Pilot samples</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #1c1915;
+    --muted: #5e584e;
+    --line: #d8d0c4;
+    --paper: #f3f0ea;
+    --panel: #fffcf8;
+    --accent: #243044;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--paper);
+    font: 16px/1.45 "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  header, main { width: min(72rem, calc(100% - 2rem)); margin-inline: auto; }
+  header { padding: 1.1rem 0 0.2rem; }
+  h1 { margin: 0 0 0.3rem; font-size: 1.75rem; font-weight: 650; letter-spacing: -0.02em; }
+  h2 { margin: 0 0 0.55rem; font-size: 1.05rem; }
+  p { margin: 0.35rem 0; }
+  .readonly, .muted { color: var(--muted); }
+  #counts { margin: 0.45rem 0 0; font-variant-numeric: tabular-nums; font-weight: 650; }
+  .filters { display: flex; flex-wrap: wrap; gap: 0.7rem 0.9rem; align-items: end; margin: 0.85rem 0 0.7rem; }
+  .field { display: grid; gap: 0.25rem; min-width: 12rem; }
+  .field.search { flex: 1 1 18rem; }
+  .field.wide { flex: 1 1 16rem; min-width: 12rem; }
+  label { color: var(--muted); font-size: 0.8125rem; }
+  select, input[type="search"] {
+    width: 100%; padding: 0.4rem 0.5rem; font: inherit; color: var(--ink);
+    background: #fff; border: 1px solid #8a8175;
+  }
+  input[type="range"] { width: min(100%, 40rem); accent-color: var(--accent); }
+  button, .card { font: inherit; color: var(--ink); background: #fff; border: 1px solid #8a8175; }
+  button { padding: 0.4rem 0.75rem; }
+  button:disabled { opacity: 0.45; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { color: #f7f4ee; background: var(--accent); border-color: var(--accent); }
+  .banner { margin: 0.4rem 0 0.8rem; padding: 0.65rem 0.85rem; border: 1px solid #a14a4a; background: #f3d6d2; color: #3d1515; }
+  #notice:empty, #frame-status:empty, #media-error:empty { display: none; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 0.7rem; }
+  button.card {
+    display: flex; flex-direction: column; align-items: stretch; gap: 0.28rem;
+    width: 100%; padding: 0.55rem; text-align: left; background: var(--panel);
+    border-color: var(--line); cursor: pointer;
+  }
+  button.card:hover { border-color: var(--accent); }
+  .thumb-frame { display: grid; height: 7.5rem; background: #1c1915; }
+  .thumb-frame canvas, #stage {
+    width: 100%; height: 7.5rem; object-fit: contain; background: #1c1915; image-rendering: auto;
+  }
+  #stage { display: block; height: auto; max-width: min(100%, 40rem); margin-top: 0.7rem; aspect-ratio: 1; }
+  .fallback { display: grid; place-items: center; height: 7.5rem; margin: 0; color: #f3f0ea; font-size: 0.875rem; }
+  .instruction { font-weight: 650; overflow-wrap: anywhere; }
+  .meta { color: var(--muted); font-size: 0.8125rem; overflow-wrap: anywhere; }
+  .pager, .toolbar { display: flex; flex-wrap: wrap; gap: 0.6rem 0.75rem; align-items: center; margin: 0.85rem 0; }
+  #page-label, #match-label { margin: 0; font-variant-numeric: tabular-nums; }
+  .panel { margin: 0 0 0.9rem; padding: 0.9rem 1rem; background: var(--panel); border: 1px solid var(--line); }
+  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+  @media (max-width: 800px) { .columns { grid-template-columns: 1fr; } }
+  .instruction-full { margin: 0 0 0.8rem; font-size: 1.25rem; font-weight: 650; letter-spacing: -0.02em; white-space: pre-wrap; overflow-wrap: anywhere; }
+  dl { display: grid; grid-template-columns: minmax(8.5rem, 12rem) 1fr; gap: 0.3rem 0.7rem; margin: 0 0 0.8rem; }
+  dt { color: var(--muted); }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  ul { margin: 0.2rem 0 0; padding-left: 1.15rem; }
+  #media-error { color: #3d1515; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Pilot samples</h1>
+  <p class="readonly">This viewer is read-only. It does not record a review outcome or edit labels.</p>
+  <p class="readonly">Pictures on this page are reduced viewing copies. The original frame arrays stay in the source archives. Original height and width are listed with each sample.</p>
+  <p id="counts"></p>
+</header>
+<main>
+  <div class="filters">
+    <div class="field">
+      <label for="source">Source dataset</label>
+      <select id="source"><option value="">All</option></select>
+    </div>
+    <div class="field">
+      <label for="quality">Original quality string</label>
+      <select id="quality"><option value="">All</option></select>
+    </div>
+    <div class="field">
+      <label for="warning">Warning</label>
+      <select id="warning"><option value="">All</option></select>
+    </div>
+    <div class="field search">
+      <label for="q">Instruction or sample ID</label>
+      <input id="q" type="search" autocomplete="off" spellcheck="false">
+    </div>
+  </div>
+  <p id="notice" role="status" aria-live="polite"></p>
+  <section id="gallery" aria-labelledby="gallery-heading">
+    <h2 id="gallery-heading" class="muted">Gallery</h2>
+    <div id="cards" class="cards"></div>
+    <p id="empty" hidden>No samples match these filters.</p>
+    <div class="pager">
+      <button type="button" id="page-prev" disabled>Previous page</button>
+      <p id="page-label">Showing 0–0 of 0 matching.</p>
+      <button type="button" id="page-next" disabled>Next page</button>
+    </div>
+  </section>
+  <section id="detail" hidden>
+    <div class="toolbar">
+      <button type="button" id="back">Back to results</button>
+      <button type="button" id="sample-prev" disabled>Previous sample</button>
+      <button type="button" id="sample-next" disabled>Next sample</button>
+      <p id="match-label"></p>
+    </div>
+    <p id="detail-instruction" class="instruction-full"></p>
+    <div class="columns">
+      <div class="panel">
+        <h2>Identifiers</h2>
+        <dl id="identifiers"></dl>
+        <h2>Source</h2>
+        <dl id="source-fields"></dl>
+      </div>
+      <div class="panel">
+        <h2>Labels</h2>
+        <dl id="quality-fields"></dl>
+        <dl>
+          <dt>Verified success</dt>
+          <dd id="success-value"></dd>
+        </dl>
+        <p>The original quality string is stored as written. It is not verified success.</p>
+        <dl>
+          <dt>Partial success</dt>
+          <dd id="partial-value"></dd>
+        </dl>
+        <h2>Warnings</h2>
+        <ul id="warning-list"></ul>
+      </div>
+    </div>
+    <section class="panel" aria-labelledby="media-heading">
+      <h2 id="media-heading">Media</h2>
+      <dl id="media-fields"></dl>
+      <p id="media-error"></p>
+      <p id="time-note"></p>
+      <div class="toolbar">
+        <button type="button" id="frame-prev" disabled>Previous frame</button>
+        <button type="button" id="frame-next" disabled>Next frame</button>
+        <button type="button" id="autoplay" aria-pressed="false" disabled>Play</button>
+        <div class="field">
+          <label for="speed">Autoplay speed</label>
+          <select id="speed" disabled>
+            <option value="4">4 frames per second</option>
+            <option value="8" selected>8 frames per second</option>
+            <option value="12">12 frames per second</option>
+          </select>
+        </div>
+      </div>
+      <div class="field wide">
+        <label for="frame-slider">Stored frame</label>
+        <input id="frame-slider" type="range" min="0" max="0" value="0" step="1" disabled>
+      </div>
+      <p id="frame-caption" class="muted"></p>
+      <p id="frame-status" role="status" aria-live="polite"></p>
+      <canvas id="stage" hidden></canvas>
+      <p>Autoplay speed is a viewing setting. It is not verified physical robot timing.</p>
+    </section>
+  </section>
+</main>
+<script>
+(function () {
+  const pageSize = 24;
+  let records = [];
+  let pageOffset = 0;
+  let openIndex = null;
+  let frameIndex = 0;
+  let frameCount = 0;
+  let stripImage = null;
+  let stripToken = 0;
+  let autoplayOn = false;
+  let autoplayTimer = null;
+
+  function el(id) { return document.getElementById(id); }
+
+  function setNotice(message, isError) {
+    const node = el("notice");
+    node.textContent = message || "";
+    node.classList.toggle("banner", Boolean(isError) && Boolean(message));
+  }
+
+  function setFrameStatus(message, isError) {
+    const node = el("frame-status");
+    node.textContent = message || "";
+    node.classList.toggle("banner", Boolean(isError) && Boolean(message));
+  }
+
+  function display(value) {
+    if (value === null || value === undefined || value === "") return "not recorded";
+    return String(value);
+  }
+
+  function countsOf(key) {
+    const counts = new Map();
+    for (const record of records) {
+      const value = key === "warnings" ? null : record[key];
+      if (key === "warnings") {
+        const seen = new Set();
+        for (const flag of record.warnings || []) {
+          if (seen.has(flag)) continue;
+          seen.add(flag);
+          counts.set(flag, (counts.get(flag) || 0) + 1);
+        }
+      } else if (value != null && value !== "") {
+        counts.set(value, (counts.get(value) || 0) + 1);
+      }
+    }
+    return Array.from(counts.keys()).sort().map(function (value) {
+      return {value: value, count: counts.get(value)};
+    });
+  }
+
+  function fillSelect(id, items) {
+    const select = el(id);
+    const current = select.value;
+    select.replaceChildren();
+    const all = document.createElement("option");
+    all.value = "";
+    all.textContent = "All";
+    select.appendChild(all);
+    for (const item of items) {
+      const option = document.createElement("option");
+      option.value = String(item.value);
+      option.textContent = String(item.value) + " (" + Number(item.count).toLocaleString("en-US") + ")";
+      select.appendChild(option);
+    }
+    const known = Array.from(select.options, function (option) { return option.value; });
+    select.value = known.indexOf(current) === -1 ? "" : current;
+  }
+
+  function filters() {
+    return {
+      source: el("source").value,
+      quality: el("quality").value,
+      warning: el("warning").value,
+      q: el("q").value.trim().toLowerCase()
+    };
+  }
+
+  function matches(record, filter) {
+    if (filter.source && record.data_source !== filter.source) return false;
+    if (filter.quality && record.quality_label !== filter.quality) return false;
+    if (filter.warning && (record.warnings || []).indexOf(filter.warning) === -1) return false;
+    if (filter.q) {
+      const instruction = (record.instruction || "").toLowerCase();
+      const sampleId = (record.sample_id || "").toLowerCase();
+      if (instruction.indexOf(filter.q) === -1 && sampleId.indexOf(filter.q) === -1) return false;
+    }
+    return true;
+  }
+
+  function matchingRecords() {
+    const filter = filters();
+    return records.filter(function (record) { return matches(record, filter); });
+  }
+
+  function renderCounts(matching) {
+    el("counts").textContent = records.length.toLocaleString("en-US") + " samples. " + matching.toLocaleString("en-US") + " matching.";
+  }
+
+  function warningSummary(warnings) {
+    if (!warnings || !warnings.length) return "None";
+    if (warnings.length <= 2) return warnings.join(", ");
+    return String(warnings.length) + " warnings";
+  }
+
+  function addLine(parent, className, text) {
+    const span = document.createElement("span");
+    span.className = className;
+    span.textContent = text;
+    parent.appendChild(span);
+  }
+
+  function paint(canvas, image, index, tileWidth, tileHeight, cssHeight) {
+    canvas.width = tileWidth;
+    canvas.height = tileHeight;
+    canvas.style.aspectRatio = tileWidth + " / " + tileHeight;
+    if (cssHeight) canvas.style.height = cssHeight;
+    const context = canvas.getContext("2d");
+    context.imageSmoothingEnabled = true;
+    context.drawImage(image, index * tileWidth, 0, tileWidth, tileHeight, 0, 0, tileWidth, tileHeight);
+  }
+
+  function buildCard(record) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "card";
+    button.addEventListener("click", function () { openDetail(record.index); });
+    const frame = document.createElement("span");
+    frame.className = "thumb-frame";
+    const loading = document.createElement("span");
+    loading.className = "fallback";
+    loading.textContent = record.media_error ? "Media unavailable" : "Loading preview…";
+    const canvas = document.createElement("canvas");
+    canvas.hidden = true;
+    frame.appendChild(loading);
+    frame.appendChild(canvas);
+    button.appendChild(frame);
+    if (!record.media_error && record.tile_width && record.frame_count) {
+      const image = new Image();
+      image.alt = "";
+      image.onload = function () {
+        if (!button.isConnected) return;
+        paint(canvas, image, 0, record.tile_width, record.tile_height, "7.5rem");
+        loading.hidden = true;
+        canvas.hidden = false;
+      };
+      image.onerror = function () {
+        if (!button.isConnected) return;
+        canvas.hidden = true;
+        loading.hidden = false;
+        loading.textContent = "Media unavailable";
+      };
+      image.src = "strips/" + record.index + ".png";
+    }
+    addLine(button, "instruction", typeof record.instruction === "string" ? record.instruction : "not recorded");
+    addLine(button, "meta", "Sample ID: " + display(record.sample_id));
+    addLine(button, "meta", "Source dataset: " + display(record.data_source));
+    addLine(button, "meta", "Original quality string: " + display(record.quality_label));
+    addLine(button, "meta", "Declared frames: " + display(record.declared_frame_count));
+    addLine(button, "meta", "Warnings: " + warningSummary(record.warnings));
+    return button;
+  }
+
+  function renderGallery() {
+    const matched = matchingRecords();
+    const page = matched.slice(pageOffset, pageOffset + pageSize);
+    renderCounts(matched.length);
+    const root = el("cards");
+    root.replaceChildren();
+    for (const record of page) root.appendChild(buildCard(record));
+    const count = page.length;
+    const start = count === 0 ? 0 : pageOffset + 1;
+    const end = count === 0 ? 0 : pageOffset + count;
+    el("page-label").textContent = "Showing " + start.toLocaleString("en-US") + "–" + end.toLocaleString("en-US") + " of " + matched.length.toLocaleString("en-US") + " matching.";
+    el("page-prev").disabled = pageOffset <= 0;
+    el("page-next").disabled = count === 0 || pageOffset + count >= matched.length;
+    el("empty").hidden = count !== 0;
+    el("gallery").hidden = false;
+    el("detail").hidden = true;
+    setNotice("", false);
+  }
+
+  function onFilterChange() {
+    pageOffset = 0;
+    stopAutoplay();
+    renderGallery();
+  }
+
+  function fillDefinition(list, pairs) {
+    list.replaceChildren();
+    for (const pair of pairs) {
+      const term = document.createElement("dt");
+      term.textContent = pair[0];
+      const value = document.createElement("dd");
+      value.textContent = pair[1];
+      list.appendChild(term);
+      list.appendChild(value);
+    }
+  }
+
+  function successText(value) {
+    if (value === null || value === undefined) return "Unknown";
+    if (value === true) return "True";
+    if (value === false) return "False";
+    return String(value);
+  }
+
+  function findRecord(index) {
+    return records[index] && records[index].index === index ? records[index] : records.find(function (record) {
+      return record.index === index;
+    });
+  }
+
+  function updateFrameChrome() {
+    const last = frameCount > 0 ? frameCount - 1 : 0;
+    const slider = el("frame-slider");
+    slider.min = "0";
+    slider.max = String(last);
+    slider.value = String(frameCount > 0 ? frameIndex : 0);
+    slider.disabled = frameCount <= 0;
+    el("frame-prev").disabled = frameCount <= 0 || frameIndex <= 0;
+    el("frame-next").disabled = frameCount <= 0 || frameIndex >= frameCount - 1;
+    el("autoplay").disabled = frameCount <= 1;
+    el("speed").disabled = frameCount <= 1;
+    el("frame-caption").textContent = frameCount > 0 ? "Stored frame " + frameIndex + " of " + last : "";
+  }
+
+  function drawCurrent() {
+    const record = findRecord(openIndex);
+    const stage = el("stage");
+    if (!record || !stripImage || frameCount <= 0) {
+      stage.hidden = true;
+      return;
+    }
+    paint(stage, stripImage, frameIndex, record.tile_width, record.tile_height, "auto");
+    stage.hidden = false;
+  }
+
+  function showFrame(index, continueAfter) {
+    if (frameCount <= 0 || index < 0 || index >= frameCount) return;
+    frameIndex = index;
+    updateFrameChrome();
+    if (!stripImage) {
+      setFrameStatus("Loading frame…", false);
+      return;
+    }
+    drawCurrent();
+    setFrameStatus("", false);
+    if (index >= frameCount - 1) stopAutoplay();
+    else if (continueAfter && autoplayOn) scheduleAutoplay();
+  }
+
+  function loadStrip(record) {
+    const token = ++stripToken;
+    stripImage = null;
+    const stage = el("stage");
+    stage.hidden = true;
+    frameCount = 0;
+    frameIndex = 0;
+    updateFrameChrome();
+    if (record.media_error || !record.tile_width || !record.frame_count) {
+      setFrameStatus(record.media_error || "Media unavailable", true);
+      return;
+    }
+    setFrameStatus("Loading frame…", false);
+    const image = new Image();
+    image.onload = function () {
+      if (token !== stripToken) return;
+      stripImage = image;
+      frameCount = record.frame_count;
+      showFrame(0, false);
+    };
+    image.onerror = function () {
+      if (token !== stripToken) return;
+      frameCount = 0;
+      updateFrameChrome();
+      setFrameStatus("Media unavailable", true);
+    };
+    image.src = "strips/" + record.index + ".png";
+  }
+
+  function openDetail(index) {
+    const record = findRecord(index);
+    if (!record) {
+      setNotice("Sample index " + index + " is outside 0.." + (records.length - 1) + ".", true);
+      return;
+    }
+    stopAutoplay();
+    openIndex = index;
+    const matched = matchingRecords();
+    const position = matched.findIndex(function (item) { return item.index === index; });
+    el("gallery").hidden = true;
+    el("detail").hidden = false;
+    el("detail-instruction").textContent = typeof record.instruction === "string" ? record.instruction : "not recorded";
+    fillDefinition(el("identifiers"), [
+      ["Canonical index", display(record.index)],
+      ["Sample ID", display(record.sample_id)],
+      ["Trajectory ID", display(record.trajectory_id)],
+      ["Row index", display(record.row_index)]
+    ]);
+    fillDefinition(el("source-fields"), [
+      ["Dataset", display(record.dataset)],
+      ["Data source", display(record.data_source)],
+      ["Source key", display(record.source_key)],
+      ["Config", display(record.config)],
+      ["Revision", display(record.revision)],
+      ["Original split", display(record.original_split)],
+      ["Upstream dataset", display(record.upstream_dataset)],
+      ["Upstream subset", display(record.upstream_subset)],
+      ["Raw record ref", display(record.raw_record_ref)]
+    ]);
+    const qualityPairs = [["Original quality string", display(record.quality_label)]];
+    if (record.quality_scope) qualityPairs.push(["Scope", String(record.quality_scope)]);
+    if (record.quality_label_source) qualityPairs.push(["Label source", String(record.quality_label_source)]);
+    if (record.quality_mapping_rule) qualityPairs.push(["Mapping rule", String(record.quality_mapping_rule)]);
+    fillDefinition(el("quality-fields"), qualityPairs);
+    el("success-value").textContent = successText(record.success);
+    el("partial-value").textContent = record.partial_success == null ? "not recorded" : String(record.partial_success);
+    const warnings = el("warning-list");
+    warnings.replaceChildren();
+    const flags = record.warnings && record.warnings.length ? record.warnings : ["None"];
+    for (const flag of flags) {
+      const item = document.createElement("li");
+      item.textContent = String(flag);
+      warnings.appendChild(item);
+    }
+    const mediaPairs = [
+      ["Declared frame count", display(record.declared_frame_count)],
+      ["Measured frame count", display(record.frame_count)],
+      ["Height", display(record.height)],
+      ["Width", display(record.width)],
+      ["Channels", display(record.channels)],
+      ["Viewing copy", record.tile_width ? record.tile_width + "×" + record.tile_height + " per stored frame" : "not recorded"]
+    ];
+    fillDefinition(el("media-fields"), mediaPairs);
+    el("media-error").textContent = record.media_error ? String(record.media_error) : "";
+    const timebase = record.timebase || "not recorded";
+    el("time-note").textContent = record.physical_time_verified === true
+      ? "Physical time is verified. The timebase is " + timebase + "."
+      : "Physical time is not verified. The timebase is " + timebase + ".";
+    el("match-label").textContent = position === -1 ? "" : "Match " + (position + 1) + " of " + matched.length;
+    const previous = position > 0 ? matched[position - 1].index : null;
+    const next = position >= 0 && position < matched.length - 1 ? matched[position + 1].index : null;
+    const prevButton = el("sample-prev");
+    const nextButton = el("sample-next");
+    prevButton.disabled = previous == null;
+    nextButton.disabled = next == null;
+    prevButton.onclick = previous == null ? null : function () { openDetail(previous); };
+    nextButton.onclick = next == null ? null : function () { openDetail(next); };
+    setNotice("", false);
+    loadStrip(record);
+  }
+
+  function clearAutoplayTimer() {
+    if (autoplayTimer !== null) {
+      clearTimeout(autoplayTimer);
+      autoplayTimer = null;
+    }
+  }
+
+  function scheduleAutoplay() {
+    clearAutoplayTimer();
+    const selected = Number(el("speed").value);
+    const fps = selected === 4 || selected === 8 || selected === 12 ? selected : 8;
+    autoplayTimer = setTimeout(function () {
+      autoplayTimer = null;
+      if (!autoplayOn || frameIndex >= frameCount - 1) {
+        stopAutoplay();
+        return;
+      }
+      showFrame(frameIndex + 1, true);
+    }, 1000 / fps);
+  }
+
+  function stopAutoplay() {
+    autoplayOn = false;
+    clearAutoplayTimer();
+    const button = el("autoplay");
+    button.setAttribute("aria-pressed", "false");
+    button.textContent = "Play";
+  }
+
+  function startAutoplay() {
+    if (frameCount <= 1 || frameIndex >= frameCount - 1) {
+      stopAutoplay();
+      return;
+    }
+    autoplayOn = true;
+    const button = el("autoplay");
+    button.setAttribute("aria-pressed", "true");
+    button.textContent = "Stop";
+    scheduleAutoplay();
+  }
+
+  el("source").addEventListener("change", onFilterChange);
+  el("quality").addEventListener("change", onFilterChange);
+  el("warning").addEventListener("change", onFilterChange);
+  el("q").addEventListener("input", onFilterChange);
+  el("page-prev").addEventListener("click", function () {
+    pageOffset = Math.max(0, pageOffset - pageSize);
+    renderGallery();
+  });
+  el("page-next").addEventListener("click", function () {
+    pageOffset += pageSize;
+    renderGallery();
+  });
+  el("back").addEventListener("click", function () { stopAutoplay(); renderGallery(); });
+  el("frame-prev").addEventListener("click", function () {
+    stopAutoplay();
+    if (frameIndex > 0) showFrame(frameIndex - 1, false);
+  });
+  el("frame-next").addEventListener("click", function () {
+    stopAutoplay();
+    if (frameCount > 0 && frameIndex < frameCount - 1) showFrame(frameIndex + 1, false);
+  });
+  el("frame-slider").addEventListener("input", function () {
+    stopAutoplay();
+    showFrame(Number(el("frame-slider").value), false);
+  });
+  el("autoplay").addEventListener("click", function () {
+    if (autoplayOn) stopAutoplay();
+    else startAutoplay();
+  });
+  el("speed").addEventListener("change", function () {
+    if (autoplayOn) scheduleAutoplay();
+  });
+
+  setNotice("Loading samples…", false);
+  fetch("catalog.json", {headers: {Accept: "application/json"}}).then(function (response) {
+    if (!response.ok) throw new Error("The sample catalog did not load (" + response.status + ").");
+    return response.json();
+  }).then(function (payload) {
+    records = Array.isArray(payload.items) ? payload.items : [];
+    fillSelect("source", countsOf("data_source"));
+    fillSelect("quality", countsOf("quality_label"));
+    fillSelect("warning", countsOf("warnings"));
+    renderGallery();
+  }).catch(function (error) {
+    setNotice(error.message, true);
+  });
+})();
+</script>
+</body>
+</html>
